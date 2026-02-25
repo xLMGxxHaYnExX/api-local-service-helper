@@ -1,0 +1,29 @@
+# Environment Variables - LOCAL ONLY
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Build
+target/
+*.jar
+*.war
+*.nar
+*.ear
+
+# Maven
+.mvn/
+mvnw.cmd (Windows only - consider in .gitignore)
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+

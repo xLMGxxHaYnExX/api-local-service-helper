@@ -1,0 +1,144 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║  API LOCAL SERVICE HELPER - DEPLOYMENT QUICK CARD                 ║
+║  Ready for Local & Production Deployment                         ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+┌─ DEPLOY IN 30 SECONDS ────────────────────────────────────────────┐
+│                                                                    │
+│  1. Copy-Item .env.local .env                                    │
+│  2. notepad .env  (set DB_PASSWORD)                              │
+│  3. .\deploy.ps1 up                                              │
+│                                                                    │
+│  Then visit: http://localhost:4000/api/commands                  │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ QUICK COMMANDS ──────────────────────────────────────────────────┐
+│                                                                    │
+│  Deploy            .\deploy.ps1 up                               │
+│  Stop              .\deploy.ps1 down                             │
+│  Logs              .\deploy.ps1 logs                             │
+│  Restart           .\deploy.ps1 restart                          │
+│  Test              .\deploy.ps1 test                             │
+│                                                                    │
+│  Check Status      docker ps                                     │
+│  Test API          curl http://localhost:4000/api/commands       │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ ENVIRONMENT VARIABLES (.env) ────────────────────────────────────┐
+│                                                                    │
+│  DB_URL             jdbc:db2://localhost:50000/APISRHDB          │
+│  DB_USER            db2inst1                                     │
+│  DB_PASSWORD        your_password_here          ⚠️ REQUIRED     │
+│  SERVER_PORT        4000                        (optional)       │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ FILES CREATED ───────────────────────────────────────────────────┐
+│                                                                    │
+│  Configuration                                                   │
+│    .env.local                  ✓ Template (commit to Git)        │
+│    .env                        → Create from .env.local          │
+│    docker-compose.local.yml    ✓ Container orchestration        │
+│    Dockerfile                  ✓ Enhanced with health checks    │
+│    k8s-deployment.yaml         ✓ For Rancher/Kubernetes        │
+│                                                                    │
+│  Scripts                                                         │
+│    deploy.ps1                  ✓ Automated deployment            │
+│                                                                    │
+│  Documentation (Choose One)                                      │
+│    QUICK_START.md              5-minute setup guide             │
+│    QUICK_REFERENCE.md          Command cheat sheet              │
+│    LOCAL_DEPLOYMENT_GUIDE.md   Complete reference              │
+│    ENVIRONMENT_VARIABLES.md    Env vars deep dive              │
+│    DEPLOYMENT_CHECKLIST.md     Step-by-step checklist          │
+│    INDEX.md                    Documentation hub               │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ TROUBLESHOOTING ─────────────────────────────────────────────────┐
+│                                                                    │
+│  Problem                          Solution                        │
+│  ─────────────────────────────────────────────────────────────   │
+│  "Port 4000 already in use"      Edit .env: SERVER_PORT=8080   │
+│  "Database connection failed"    Check credentials in .env      │
+│  "Docker not found"              Install Docker Desktop         │
+│  "Permission denied"             Run PowerShell as Admin        │
+│  "Something else"                .\deploy.ps1 logs              │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ SECURITY NOTES ──────────────────────────────────────────────────┐
+│                                                                    │
+│  ✓ Credentials removed from code                                 │
+│  ✓ Environment variables implemented                             │
+│  ✓ .env is git-ignored (your password is safe)                  │
+│  ✗ NEVER commit .env to Git                                     │
+│  ✗ NEVER share .env file unencrypted                            │
+│                                                                    │
+│  .env.local = Safe template (commit)  ✓                         │
+│  .env       = Your credentials (don't commit) ✗                 │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ NEXT STEPS ──────────────────────────────────────────────────────┐
+│                                                                    │
+│  For Local Development:                                          │
+│    1. Create .env file                                           │
+│    2. Add your database password                                 │
+│    3. Run: .\deploy.ps1 up                                       │
+│    4. Access: http://localhost:4000                              │
+│                                                                    │
+│  For Production (Later):                                         │
+│    1. Read: LOCAL_DEPLOYMENT_GUIDE.md                            │
+│    2. Push Docker image to registry                              │
+│    3. Use: k8s-deployment.yaml template                          │
+│    4. Deploy to Rancher/Kubernetes                               │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ DOCUMENTATION QUICK MAP ─────────────────────────────────────────┐
+│                                                                    │
+│  Start Here               INDEX.md                               │
+│  5-Minute Setup           QUICK_START.md                         │
+│  Command Reference        QUICK_REFERENCE.md                    │
+│  Complete Guide           LOCAL_DEPLOYMENT_GUIDE.md             │
+│  Env Vars Help            ENVIRONMENT_VARIABLES.md              │
+│  Step by Step             DEPLOYMENT_CHECKLIST.md               │
+│  What Changed             SETUP_SUMMARY.md                      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ SYSTEM REQUIREMENTS ─────────────────────────────────────────────┐
+│                                                                    │
+│  ✓ Windows 10/11 with WSL 2                                     │
+│  ✓ Docker Desktop (latest)                                      │
+│  ✓ Java 17+ (or included Maven wrapper)                         │
+│  ✓ Maven 3.8+ (or use mvnw.cmd)                                 │
+│  ✓ 4GB RAM minimum                                              │
+│  ✓ Database connectivity to IBM DB2                             │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+┌─ PORT MAPPING ────────────────────────────────────────────────────┐
+│                                                                    │
+│  Service          Container Port    Host Port    URL             │
+│  ────────────────────────────────────────────────────────────   │
+│  API              4000               4000         localhost:4000  │
+│                                                                    │
+│  Can be changed in .env file with SERVER_PORT variable          │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  READY TO DEPLOY?                                                ║
+║                                                                   ║
+║  Copy-Item .env.local .env                                       ║
+║  notepad .env                                                    ║
+║  .\deploy.ps1 up                                                 ║
+║                                                                   ║
+║  Status: ✅ COMPLETE - Ready for Local & Production Deployment   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+

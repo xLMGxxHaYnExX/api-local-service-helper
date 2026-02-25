@@ -1,0 +1,290 @@
+# Kubernetes Deployment for Rancher
+# Copy to your Rancher project and apply
+
+---
+
+# Namespace (optional - for organization)
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: api-services
+
+---
+
+# Secret for Database Credentials
+# ⚠️ Use Rancher Secrets UI instead of this for production
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-local-service-secrets
+  namespace: api-services
+type: Opaque
+stringData:
+  DB_PASSWORD: "your_secure_password_here"
+
+---
+
+# ConfigMap for non-sensitive configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-local-service-config
+  namespace: api-services
+data:
+  DB_URL: "jdbc:db2://db-server:50000/APISRHDB"
+  DB_USER: "db2inst1"
+  SERVER_PORT: "4000"
+
+---
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-local-service
+  namespace: api-services
+  labels:
+    app: api-local-service
+spec:
+  type: ClusterIP  # Change to LoadBalancer if you need external access
+  ports:
+  - name: http
+    port: 80
+    targetPort: 4000
+    protocol: TCP
+  selector:
+    app: api-local-service
+
+---
+
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-local-service
+  namespace: api-services
+  labels:
+    app: api-local-service
+    version: v1.0.0
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  selector:
+    matchLabels:
+      app: api-local-service
+
+  template:
+    metadata:
+      labels:
+        app: api-local-service
+
+    spec:
+      # Service Account (for RBAC)
+      serviceAccountName: default
+
+      # Pod security context
+      securityContext:
+        runAsNonRoot: false
+        fsGroup: 1000
+
+      containers:
+      - name: api-local-service
+        # Use your Docker registry image
+        image: your-registry/api-local-service:v1.0.0
+        imagePullPolicy: IfNotPresent
+
+        # Container security context
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+        ports:
+        - name: http
+          containerPort: 4000
+          protocol: TCP
+
+        # Environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: api-local-service-config
+
+        # Environment variables from Secret
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: api-local-service-secrets
+              key: DB_PASSWORD
+
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
+
+        # Liveness Probe - Check if container is alive
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+
+        # Readiness Probe - Check if container is ready for traffic
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Startup Probe - Check if container has started (Kubernetes 1.18+)
+        startupProbe:
+          httpGet:
+            path: /actuator/health
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 30
+
+        # Resource limits
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+        # Volume mounts
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+
+        # Lifecycle hooks
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"]
+
+      # Volumes
+      volumes:
+      - name: logs
+        emptyDir: {}
+
+      # Pod affinity (optional - schedule on specific nodes)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - api-local-service
+              topologyKey: kubernetes.io/hostname
+
+      # Tolerations (if using taints)
+      tolerations: []
+
+---
+
+# Horizontal Pod Autoscaler (optional)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-local-service-hpa
+  namespace: api-services
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-local-service
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+
+# NetworkPolicy (optional - for security)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-local-service-network-policy
+  namespace: api-services
+spec:
+  podSelector:
+    matchLabels:
+      app: api-local-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 4000
+  egress:
+  - to:
+    - podSelector: {}
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 53  # DNS
+
+---
+
+# Ingress (optional - for external access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-local-service-ingress
+  namespace: api-services
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # If using cert-manager
+spec:
+  ingressClassName: nginx  # Change based on your Rancher ingress controller
+  rules:
+  - host: api-local-service.example.com  # Update with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: api-local-service
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - api-local-service.example.com
+    secretName: api-local-service-tls
+

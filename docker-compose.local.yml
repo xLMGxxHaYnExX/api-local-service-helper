@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  api-local-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-local-service-helper
+    ports:
+      - "${SERVER_PORT:-4000}:4000"
+    environment:
+      DB_URL: ${DB_URL:-jdbc:db2://host.docker.internal:50000/APISRHDB}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SERVER_PORT: ${SERVER_PORT:-4000}
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    volumes:
+      - ./src:/app/src:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - api-local-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  api-local-network:
+    driver: bridge
