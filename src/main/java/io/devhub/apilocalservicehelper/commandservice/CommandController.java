@@ -11,6 +11,9 @@
  */
 package io.devhub.apilocalservicehelper.commandservice;
 
+import io.devhub.apilocalservicehelper.security.InputValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +22,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/commands")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:8080", "*"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "http://localhost:8080"},
+             maxAge = 3600)
 public class CommandController {
+    private static final Logger logger = LoggerFactory.getLogger(CommandController.class);
     private final CommandService service;
 
     public CommandController(CommandService service) {
@@ -44,12 +49,19 @@ public class CommandController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<?> getById(@PathVariable String id) {
-        var command = service.getById(id);
-        if (command.isPresent()) {
-            return ResponseEntity.ok(command.get());
+        try {
+            String validatedId = InputValidator.validateId(id);
+            var command = service.getById(validatedId);
+            if (command.isPresent()) {
+                return ResponseEntity.ok(command.get());
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Command not found"));
+        } catch (InputValidator.ValidationException e) {
+            logger.warn("Invalid ID format provided");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid ID format"));
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(Map.of("error", "Command not found: " + id));
     }
 
     /**
@@ -59,18 +71,46 @@ public class CommandController {
      */
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Command cmd) {
-        if (cmd.getId() == null || cmd.getId().isEmpty()) {
+        try {
+            if (cmd == null || cmd.getId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid input: Command ID is required"));
+            }
+
+            // Validate all input fields
+            String id = InputValidator.validateId(cmd.getId());
+            String app = InputValidator.validateApp(cmd.getApp());
+            String category = InputValidator.validateCategory(cmd.getCategory());
+            String type = InputValidator.validateType(cmd.getType());
+            String title = InputValidator.validateTitle(cmd.getTitle());
+            String command = InputValidator.validateCommand(cmd.getCommand());
+            String description = InputValidator.validateDescription(cmd.getDescription());
+            Integer priority = InputValidator.validatePriority(cmd.getPriority());
+            String tagsJson = InputValidator.validateTagsJson(cmd.getTagsJson());
+
+            // Set validated values
+            cmd.setId(id);
+            cmd.setApp(app);
+            cmd.setCategory(category);
+            cmd.setType(type);
+            cmd.setTitle(title);
+            cmd.setCommand(command);
+            cmd.setDescription(description);
+            cmd.setPriority(priority);
+            cmd.setTagsJson(tagsJson);
+
+            // Check if command already exists
+            if (service.getById(id).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Command already exists"));
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(service.add(cmd));
+        } catch (InputValidator.ValidationException e) {
+            logger.warn("Input validation failed during command creation: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "Command ID is required"));
+                .body(Map.of("error", "Invalid input: " + e.getMessage()));
         }
-
-        // Check if command already exists
-        if (service.getById(cmd.getId()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("error", "Command already exists: " + cmd.getId()));
-        }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.add(cmd));
     }
 
     /**
@@ -81,12 +121,40 @@ public class CommandController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable String id, @RequestBody Command cmd) {
-        Command updated = service.update(id, cmd);
-        if (updated != null) {
-            return ResponseEntity.ok(updated);
+        try {
+            String validatedId = InputValidator.validateId(id);
+
+            // Validate all input fields
+            String app = InputValidator.validateApp(cmd.getApp());
+            String category = InputValidator.validateCategory(cmd.getCategory());
+            String type = InputValidator.validateType(cmd.getType());
+            String title = InputValidator.validateTitle(cmd.getTitle());
+            String command = InputValidator.validateCommand(cmd.getCommand());
+            String description = InputValidator.validateDescription(cmd.getDescription());
+            Integer priority = InputValidator.validatePriority(cmd.getPriority());
+            String tagsJson = InputValidator.validateTagsJson(cmd.getTagsJson());
+
+            // Set validated values
+            cmd.setApp(app);
+            cmd.setCategory(category);
+            cmd.setType(type);
+            cmd.setTitle(title);
+            cmd.setCommand(command);
+            cmd.setDescription(description);
+            cmd.setPriority(priority);
+            cmd.setTagsJson(tagsJson);
+
+            Command updated = service.update(validatedId, cmd);
+            if (updated != null) {
+                return ResponseEntity.ok(updated);
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Command not found"));
+        } catch (InputValidator.ValidationException e) {
+            logger.warn("Input validation failed during command update: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid input: " + e.getMessage()));
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(Map.of("error", "Command not found: " + id));
     }
 
     /**
@@ -96,11 +164,18 @@ public class CommandController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable String id) {
-        if (service.getById(id).isPresent()) {
-            service.delete(id);
-            return ResponseEntity.ok(Map.of("message", "Command deleted: " + id));
+        try {
+            String validatedId = InputValidator.validateId(id);
+            if (service.getById(validatedId).isPresent()) {
+                service.delete(validatedId);
+                return ResponseEntity.ok(Map.of("message", "Command deleted successfully"));
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "Command not found"));
+        } catch (InputValidator.ValidationException e) {
+            logger.warn("Invalid ID format provided");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid ID format"));
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(Map.of("error", "Command not found: " + id));
     }
 }

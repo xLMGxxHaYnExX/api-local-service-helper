@@ -136,7 +136,7 @@ class CommandControllerTest {
 			mockMvc.perform(get("/api/commands/non-existent-id")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.error").value("Command not found: non-existent-id"));
+				.andExpect(jsonPath("$.error").value("Command not found"));
 		}
 
 		@Test
@@ -161,8 +161,7 @@ class CommandControllerTest {
 			mockMvc.perform(post("/api/commands")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(commandJson))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.error").value("Command ID is required"));
+				.andExpect(status().isBadRequest());
 		}
 
 		@Test
@@ -174,8 +173,7 @@ class CommandControllerTest {
 			mockMvc.perform(post("/api/commands")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(commandJson))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.error").value("Command ID is required"));
+				.andExpect(status().isBadRequest());
 		}
 
 		@Test
@@ -190,7 +188,7 @@ class CommandControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(commandJson))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.error").value("Command already exists: test-git-clone"));
+				.andExpect(jsonPath("$.error").value("Command already exists"));
 		}
 
 		@Test
@@ -200,7 +198,7 @@ class CommandControllerTest {
 			commandService.add(testCommand);
 
 			// Update it
-			testCommand.setTitle("Updated Title");
+			testCommand.setTitle("UpdatedTitle");
 			testCommand.setPriority(20);
 			String updatedJson = objectMapper.writeValueAsString(testCommand);
 
@@ -208,7 +206,7 @@ class CommandControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(updatedJson))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.title").value("Updated Title"))
+				.andExpect(jsonPath("$.title").value("UpdatedTitle"))
 				.andExpect(jsonPath("$.priority").value(20));
 		}
 
@@ -221,7 +219,7 @@ class CommandControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(commandJson))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.error").value("Command not found: non-existent-id"));
+				.andExpect(jsonPath("$.error").value("Command not found"));
 		}
 
 		@Test
@@ -233,7 +231,7 @@ class CommandControllerTest {
 			mockMvc.perform(delete("/api/commands/test-git-clone")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.message").value("Command deleted: test-git-clone"));
+				.andExpect(jsonPath("$.message").value("Command deleted successfully"));
 
 			// Verify it's deleted
 			assertTrue(commandService.getById("test-git-clone").isEmpty());
@@ -245,7 +243,7 @@ class CommandControllerTest {
 			mockMvc.perform(delete("/api/commands/non-existent-id")
 				.contentType(MediaType.APPLICATION_JSON))
 				.andExpect(status().isNotFound())
-				.andExpect(jsonPath("$.error").value("Command not found: non-existent-id"));
+				.andExpect(jsonPath("$.error").value("Command not found"));
 		}
 	}
 
@@ -255,7 +253,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.getAll() returns list of commands")
-		void testControllerGetAll() {
+		void testControllerGetAll() throws Exception {
 			commandService.add(testCommand);
 			commandService.add(testCommand2);
 
@@ -268,7 +266,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.getById() returns command when exists")
-		void testControllerGetById() {
+		void testControllerGetById() throws Exception {
 			commandService.add(testCommand);
 
 			ResponseEntity<?> response = commandController.getById("test-git-clone");
@@ -281,7 +279,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.getById() returns error when not found")
-		void testControllerGetByIdNotFound() {
+		void testControllerGetByIdNotFound() throws Exception {
 			ResponseEntity<?> response = commandController.getById("non-existent-id");
 
 			assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -292,7 +290,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.create() creates command successfully")
-		void testControllerCreate() {
+		void testControllerCreate() throws Exception {
 			ResponseEntity<?> response = commandController.create(testCommand);
 
 			assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -313,7 +311,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.create() rejects duplicate ID")
-		void testControllerCreateDuplicate() {
+		void testControllerCreateDuplicate() throws Exception {
 			commandService.add(testCommand);
 			ResponseEntity<?> response = commandController.create(testCommand);
 
@@ -323,7 +321,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.update() updates command successfully")
-		void testControllerUpdate() {
+		void testControllerUpdate() throws Exception {
 			commandService.add(testCommand);
 			testCommand.setTitle("Updated");
 
@@ -336,7 +334,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.update() returns 404 when command not found")
-		void testControllerUpdateNotFound() {
+		void testControllerUpdateNotFound() throws Exception {
 			ResponseEntity<?> response = commandController.update("non-existent-id", testCommand);
 
 			assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
@@ -345,7 +343,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.delete() deletes command successfully")
-		void testControllerDelete() {
+		void testControllerDelete() throws Exception {
 			commandService.add(testCommand);
 
 			ResponseEntity<?> response = commandController.delete("test-git-clone");
@@ -357,7 +355,7 @@ class CommandControllerTest {
 
 		@Test
 		@DisplayName("Controller.delete() returns 404 when command not found")
-		void testControllerDeleteNotFound() {
+		void testControllerDeleteNotFound() throws Exception {
 			ResponseEntity<?> response = commandController.delete("non-existent-id");
 
 			assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());

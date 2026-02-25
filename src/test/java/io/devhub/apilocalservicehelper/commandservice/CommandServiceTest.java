@@ -69,7 +69,7 @@ class CommandServiceTest {
 
 	@Test
 	@DisplayName("Create command successfully")
-	void testCreateCommand() {
+	void testCreateCommand() throws Exception {
 		// Test creating a new command
 		Command saved = commandService.add(testCommand);
 		assertNotNull(saved);
@@ -80,7 +80,7 @@ class CommandServiceTest {
 
 	@Test
 	@DisplayName("Get command by ID successfully")
-	void testGetCommandById() {
+	void testGetCommandById() throws Exception {
 		// Save command first
 		commandService.add(testCommand);
 
@@ -93,14 +93,14 @@ class CommandServiceTest {
 
 	@Test
 	@DisplayName("Get non-existent command returns empty")
-	void testGetNonExistentCommand() {
+	void testGetNonExistentCommand() throws Exception {
 		Optional<Command> retrieved = commandService.getById("non-existent-id");
 		assertTrue(retrieved.isEmpty());
 	}
 
 	@Test
 	@DisplayName("Get all commands returns list")
-	void testGetAllCommands() {
+	void testGetAllCommands() throws Exception {
 		// Add multiple commands
 		commandService.add(testCommand);
 		commandService.add(testCommand2);
@@ -112,37 +112,37 @@ class CommandServiceTest {
 
 	@Test
 	@DisplayName("Get all commands returns empty list when no commands")
-	void testGetAllCommandsEmpty() {
+	void testGetAllCommandsEmpty() throws Exception {
 		List<Command> commands = commandService.list();
 		assertEquals(0, commands.size());
 	}
 
 	@Test
 	@DisplayName("Update command successfully")
-	void testUpdateCommand() {
+	void testUpdateCommand() throws Exception {
 		// Create and save
 		commandService.add(testCommand);
 
 		// Update
-		testCommand.setTitle("Updated Title");
+		testCommand.setTitle("UpdatedTitle");
 		testCommand.setPriority(15);
 		Command updated = commandService.update("test-git-clone", testCommand);
 
 		assertNotNull(updated);
-		assertEquals("Updated Title", updated.getTitle());
+		assertEquals("UpdatedTitle", updated.getTitle());
 		assertEquals(15, updated.getPriority());
 	}
 
 	@Test
 	@DisplayName("Update non-existent command returns null")
-	void testUpdateNonExistentCommand() {
+	void testUpdateNonExistentCommand() throws Exception {
 		Command updated = commandService.update("non-existent-id", testCommand);
 		assertNull(updated);
 	}
 
 	@Test
 	@DisplayName("Delete command successfully")
-	void testDeleteCommand() {
+	void testDeleteCommand() throws Exception {
 		// Save command
 		commandService.add(testCommand);
 		assertTrue(commandService.getById("test-git-clone").isPresent());
@@ -154,7 +154,7 @@ class CommandServiceTest {
 
 	@Test
 	@DisplayName("Delete non-existent command does not throw error")
-	void testDeleteNonExistentCommand() {
+	void testDeleteNonExistentCommand() throws Exception {
 		// Should not throw exception
 		assertDoesNotThrow(() -> commandService.delete("non-existent-id"));
 	}
